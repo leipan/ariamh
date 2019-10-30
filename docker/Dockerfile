@@ -6,7 +6,7 @@ LABEL description="GRFN PGE container"
 
 USER root
 
-RUN pip install 'pyproj==1.9.6'
+RUN /home/ops/verdi/bin/pip install 'pyproj==1.9.6'
 
 USER ops
 
