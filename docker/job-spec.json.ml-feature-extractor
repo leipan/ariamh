@@ -1,6 +1,8 @@
 {
   "command":"/home/ops/ariamh/ariaml/extractFeatures.sh",
   "disk_usage":"1GB",
+  "soft_time_limit": 7200,
+  "time_limit": 7500,
   "imported_worker_files": {
     "$HOME/.netrc": "/home/ops/.netrc",
     "$HOME/.aws": "/home/ops/.aws",
