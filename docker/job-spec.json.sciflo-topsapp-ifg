@@ -5,6 +5,9 @@
     "$HOME/.aws": ["/home/ops/.aws", "ro"],
     "$HOME/verdi/etc/settings.conf": "/home/ops/ariamh/conf/settings.conf"
   },
+  "disk_usage":"100GB",
+  "soft_time_limit": 1800,
+  "time_limit": 2400,
   "recommended-queues" : [
     "grfn-job_worker-small",
     "aria-job_worker-small",

@@ -5,6 +5,9 @@
     "$HOME/.aws": ["/home/ops/.aws", "ro"],
     "$HOME/verdi/etc/settings.conf": "/home/ops/ariamh/conf/settings.conf"
   },
+  "disk_usage":"100GB",
+  "soft_time_limit": 7200,
+  "time_limit": 7500,
   "recommended-queues" : [
     "standard_product-s1gunwmerged-stitcher"
   ],
