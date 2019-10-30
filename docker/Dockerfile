@@ -1,4 +1,4 @@
-FROM hysds/pge-isce_giant
+FROM hysds/isce_giant:latest
 
 MAINTAINER aria-ops "aria-ops@list.jpl.nasa.gov"
 LABEL description="GRFN PGE container"
@@ -6,7 +6,6 @@ LABEL description="GRFN PGE container"
 
 USER root
 
-RUN pip3 install 'pyproj==1.9.6'
 RUN pip install 'pyproj==1.9.6'
 
 USER ops
