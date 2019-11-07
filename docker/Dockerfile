@@ -6,7 +6,12 @@ LABEL description="GRFN PGE container"
 
 USER root
 
-RUN /home/ops/verdi/bin/pip install 'pyproj==1.9.6'
+# installing GCC compiler to update pyproj to 1.9.6
+# installing Fortran ro run ./compile.sh in slcp2pm and slcp2cor
+RUN yum -y install gcc \
+    && yum -y install gcc-gfortran \
+    && yum -y clean all \
+    && /home/ops/verdi/bin/pip install 'pyproj==1.9.6'
 
 USER ops
 
