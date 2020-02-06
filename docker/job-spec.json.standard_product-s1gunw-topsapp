@@ -19,8 +19,8 @@
   "recommended-queues" : [
     "standard_product-s1gunw-topsapp-asg-fleet"
   ],
-  "soft_time_limit": 21600,
-  "time_limit": 22600,
+  "soft_time_limit": 43200,
+  "time_limit": 43200,
   "post": [ "hysds.utils.triage" ],
   "params" : [
     {
