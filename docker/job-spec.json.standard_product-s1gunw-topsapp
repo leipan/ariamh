@@ -17,7 +17,7 @@
     }
   ],
   "recommended-queues" : [
-    "standard_product-s1gunw-topsapp-asg-fleet"
+    "standard_product-s1gunw-topsapp-pleiades"
   ],
   "soft_time_limit": 43200,
   "time_limit": 43200,
