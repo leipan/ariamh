@@ -1687,7 +1687,8 @@ def main():
     md['dem_type'] = dem_type
     md['sensingStart'] = sensing_start
     md['sensingStop'] = sensing_stop
-    md['tags'] = ['standard_product']
+    ### md['tags'] = ['standard_product']
+    md['tags'] = ctx['dataset_tag']
     md['polarization']= match_pol
     md['reference_date'] = get_date_str(ctx['slc_master_dt'])
     md['secondary_date'] = get_date_str(ctx['slc_slave_dt'])
