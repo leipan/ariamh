@@ -8,7 +8,7 @@
       "name": "dataset_tag",
       "from": "submitter",
       "type": "text",
-      "default": "pleiades",
+      "default": "standard_product,pleiades",
       "placeholder": "A value to append to the dataset identifier"
     },
     {
