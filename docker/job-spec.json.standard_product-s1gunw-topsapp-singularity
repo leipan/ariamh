@@ -6,6 +6,8 @@
     "/home/ops/verdi/etc/settings.conf": "/home/ops/ariamh/conf/settings.conf"
   },
   "disk_usage":"200GB",
+  "dependency_images": [
+  ],
   "recommended-queues" : [
     "standard_product-s1gunw-topsapp-pleiades"
   ],
