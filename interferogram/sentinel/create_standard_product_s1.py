@@ -202,7 +202,7 @@ def check_ifg_status_by_hash(new_ifg_hash):
     if total>0:
         found_id = result['hits']['hits'][0]["_id"]
         logger.info("Duplicate dataset found: %s" %found_id)
-        ### for debugging do not exit: sys.exit(0)
+        sys.exit(0)
 
     logger.info("check_slc_status : returning False")
     return False
