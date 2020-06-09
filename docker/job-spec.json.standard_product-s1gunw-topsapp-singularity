@@ -9,7 +9,7 @@
   "dependency_images": [
   ],
   "recommended-queues" : [
-    "standard_product-s1gunw-topsapp-pleiades"
+    "standard_product-s1gunw-topsapp-pleiades_s2037"
   ],
   "soft_time_limit": 10800,
   "time_limit": 10800,
