@@ -1,4 +1,8 @@
 #!/usr/bin/env python3 
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import os, sys, re, requests, json, shutil, traceback, logging, hashlib, math
 from itertools import chain
 from zipfile import ZipFile
@@ -113,6 +117,7 @@ def check_ifg_status(ifg_id):
     logger.info("check_slc_status : returning False")
     return False
 
+
 def get_dataset_by_hash(ifg_hash, es_index="grq"):
     """Query for existence of dataset by ID."""
 
@@ -127,6 +132,47 @@ def get_dataset_by_hash(ifg_hash, es_index="grq"):
                 "must":[
                     { "term":{"metadata.full_id_hash.raw": ifg_hash} },
                     { "term":{"dataset.raw": "S1-GUNW"} }
+                ]
+            }
+        }
+        
+    }
+
+    logger.info(query)
+
+    if es_url.endswith('/'):
+        search_url = '%s%s/_search' % (es_url, es_index)
+    else:
+        search_url = '%s/%s/_search' % (es_url, es_index)
+    logger.info("search_url : %s" %search_url)
+
+    r = requests.post(search_url, data=json.dumps(query))
+    r.raise_for_status()
+
+    if r.status_code != 200:
+        logger.info("Failed to query %s:\n%s" % (es_url, r.text))
+        logger.info("query: %s" % json.dumps(query, indent=2))
+        logger.info("returned: %s" % r.text)
+        raise RuntimeError("Failed to query %s:\n%s" % (es_url, r.text))
+    result = r.json()
+    logger.info(result['hits']['total'])
+    return result
+
+def get_dataset_by_hash_version(ifg_hash, version, es_index="grq"):
+    """Query for existence of dataset by ID."""
+
+    uu = UrlUtils()
+    es_url = uu.rest_url
+    #es_index = "{}_{}_s1-ifg".format(uu.grq_index_prefix, version)
+
+    # query
+    query = {
+        "query":{
+            "bool":{
+                "must":[
+                    { "term":{"metadata.full_id_hash.raw": ifg_hash} },
+                    { "term":{"dataset.raw": "S1-GUNW"} },
+                    { "term":{"version.raw": version} }
                 ]
             }
         }
@@ -207,6 +253,18 @@ def check_ifg_status_by_hash(new_ifg_hash):
     logger.info("check_slc_status : returning False")
     return False
 
+def check_ifg_status_by_hash_version(new_ifg_hash, version):
+    es_index="grq_*_s1-gunw"
+    result = get_dataset_by_hash_version(new_ifg_hash, version, es_index)
+    total = result['hits']['total']
+    logger.info("check_slc_status_by_hash : total : %s" %total)
+    if total>0:
+        found_id = result['hits']['hits'][0]["_id"]
+        logger.info("Duplicate dataset found: %s" %found_id)
+        sys.exit(0)
+
+    logger.info("check_slc_status : returning False")
+    return False
 
 def update_met(md):
 
@@ -283,7 +341,7 @@ def get_date(t):
 def get_center_time(t1, t2):
     a = get_date(t1)
     b = get_date(t2)
-    t = a + (b - a)/2
+    t = a + old_div((b - a),2)
     return t.strftime("%H%M%S")
 
 '''
@@ -333,7 +391,11 @@ def convert_number(x):
     if int(post_y)>999:
         post_y = post_y[:3]
     else:
-        post_y = post_y.ljust(3, '0')
+        print("post_y[0:3] : {}".format(post_y[0:3]))
+        if post_y[0:3] == '000':
+            post_y = '000'
+        else:
+            post_y =post_y.ljust(3, '0')
         
     print("post_y : %s " %post_y)
 
@@ -455,7 +517,7 @@ def get_area(coords):
         area += coords[i][1] * coords[j][0]
         area -= coords[j][1] * coords[i][0]
     #area = abs(area) / 2.0
-    return area / 2
+    return old_div(area, 2)
 
 
 def create_dataset_json(id, version, met_file, ds_file):
@@ -806,8 +868,8 @@ def main():
         #raise RuntimeError("Precise orbit required.")
 
 
-    for k in input_metadata.keys():
-        if k not in ctx.keys():
+    for k in list(input_metadata.keys()):
+        if k not in list(ctx.keys()):
             ctx[k] = input_metadata[k]
             logger.info("Added %s key to ctx" %k)
         else:
@@ -928,7 +990,7 @@ def main():
         raise RuntimeError(err)
     '''
 
-    if check_ifg_status_by_hash(new_ifg_hash):
+    if check_ifg_status_by_hash_version(new_ifg_hash, get_version()):
         err = "S1-GUNW IFG Found : %s" %temp_ifg_id
         logger.info(err)
         raise RuntimeError(err)
@@ -939,22 +1001,26 @@ def main():
     # unzip SAFE dirs
     master_safe_dirs = []
     for i in ctx['master_zip_file']:
-        logger.info("Unzipping {}.".format(i))
-        with ZipFile(i, 'r') as zf:
-            zf.extractall()
-        logger.info("Removing {}.".format(i))
-        try: os.unlink(i)
-        except: pass
-        master_safe_dirs.append(i.replace(".zip", ".SAFE"))
+        master_safe_dir = i.replace(".zip", ".SAFE")
+        if not os.path.exists(master_safe_dir):
+            logger.info("Unzipping {}.".format(i))
+            with ZipFile(i, 'r') as zf:
+                zf.extractall()
+            logger.info("Removing {}.".format(i))
+            try: os.unlink(i)
+            except: pass
+        master_safe_dirs.append(master_safe_dir)
     slave_safe_dirs = []
     for i in ctx['slave_zip_file']:
-        logger.info("Unzipping {}.".format(i))
-        with ZipFile(i, 'r') as zf:
-            zf.extractall()
-        logger.info("Removing {}.".format(i))
-        try: os.unlink(i)
-        except: pass
-        slave_safe_dirs.append(i.replace(".zip", ".SAFE"))
+        slave_safe_dir = i.replace(".zip", ".SAFE")
+        if not os.path.exists(slave_safe_dir):
+            logger.info("Unzipping {}.".format(i))
+            with ZipFile(i, 'r') as zf:
+                zf.extractall()
+            logger.info("Removing {}.".format(i))
+            try: os.unlink(i)
+            except: pass
+        slave_safe_dirs.append(slave_safe_dir)
 
     # get polarization values
     master_pol = get_pol_data_from_slcs(master_safe_dirs)
@@ -1036,6 +1102,7 @@ def main():
     ned13_dem_url = uu.ned13_dem_url
     dem_user = uu.dem_u
     dem_pass = uu.dem_p
+   
 
     preprocess_dem_dir="preprocess_dem"
     geocode_dem_dir="geocode_dem"
@@ -1057,13 +1124,12 @@ def main():
         dem_E = int(math.ceil(dem_E))
        
         logger.info("DEM TYPE : %s" %dem_type) 
-
         if dem_type.startswith("SRTM"):
             dem_type_simple = "SRTM"
             if dem_type.startswith("SRTM3"):
                 dem_url = srtm3_dem_url
                 dem_type_simple = "SRTM3"
-  
+
             dem_cmd = [
                 "{}/applications/dem.py".format(os.environ['ISCE_HOME']), "-a",
                 "stitch", "-b", "{} {} {} {}".format(dem_S, dem_N, dem_W, dem_E),
@@ -1086,7 +1152,6 @@ def main():
             if dem_type == "NED13-downsampled": downsample_option = "-d 33%"
             else: downsample_option = ""
  
-           
             dem_S = dem_S - 1 if dem_S > -89 else dem_S
             dem_N = dem_N + 1 if dem_N < 89 else dem_N
             dem_W = dem_W - 1 if dem_W > -179 else dem_W
@@ -1317,9 +1382,15 @@ def main():
 
 
     lats = get_geocoded_lats("merged/filt_topophase.unw.geo.vrt")
-
+    logger.info("lats : {}".format(lats))
+    logger.info("max(lats) : {} : {}".format(max(lats), convert_number(max(lats))))
+    logger.info("min(lats) : {} : {}".format(min(lats), convert_number(min(lats))))
+    logger.info("sorted(lats)[-2] : {} : {}".format(sorted(lats)[-2], convert_number(sorted(lats)[-2])))
+    logger.info("sorted(lats)[1]  {} : {}".format(sorted(lats)[1], convert_number(sorted(lats)[1])))
 
     sat_direction = "D"
+    logger.info("sat_direction : {}".format(sat_direction))
+
     west_lat= "{}_{}".format(convert_number(sorted(lats)[-2]), convert_number(min(lats)))
 
     if direction.lower() == 'asc':
@@ -1487,8 +1558,8 @@ def main():
     wmask_size = get_size(wmask)
 
     # determine downsample ratio and dowsample water mask
-    lon_rat = 1./(vrt_prod_size['lon']['delta']/wmask_size['lon']['delta'])*100
-    lat_rat = 1./(vrt_prod_size['lat']['delta']/wmask_size['lat']['delta'])*100
+    lon_rat = 1./(old_div(vrt_prod_size['lon']['delta'],wmask_size['lon']['delta']))*100
+    lat_rat = 1./(old_div(vrt_prod_size['lat']['delta'],wmask_size['lat']['delta']))*100
     logger.info("lon_rat/lat_rat: {} {}".format(lon_rat, lat_rat))
     wbd_ds_file = "wbdmask_ds.wbd"
     wbd_ds_vrt = "wbdmask_ds.vrt"
@@ -1687,19 +1758,8 @@ def main():
     md['dem_type'] = dem_type
     md['sensingStart'] = sensing_start
     md['sensingStop'] = sensing_stop
-
-    ### md['tags'] = ['standard_product']
-
-    tag_list0 = ctx['dataset_tag'].split(',')
-    tag_list = []
-    for str1 in tag_list0:
-      str2 = str1.strip()
-      if str2 != '':
-        str2 = str2.replace(' ', '_')
-        tag_list.append(str2)
-
-    md['tags'] = tag_list
-    md['polarization']= match_pol
+    md['tags'] = ['standard_product']
+    md['polarization']= match_pol.upper()
     md['reference_date'] = get_date_str(ctx['slc_master_dt'])
     md['secondary_date'] = get_date_str(ctx['slc_slave_dt'])
     
